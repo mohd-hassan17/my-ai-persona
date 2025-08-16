@@ -352,8 +352,13 @@ const MohdHassanAIChat = () => {
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Ask Mohd Hassan AI anything..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault(); // prevent default submit
+                    handleSendMessage();
+                  }
+                }}
+                placeholder="Ask Mohd Hassan AI assistant anything..."
                 className={`flex-1 bg-transparent ${isDark ? 'text-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'} focus:outline-none`}
               />
 
