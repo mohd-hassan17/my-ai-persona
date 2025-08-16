@@ -259,9 +259,15 @@ const MohdHassanAIChat = () => {
               <Menu size={20} />
             </button>
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">MH</span>
-              </div>
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center overflow-hidden">
+                  <Image
+                    alt=""
+                    src="/myimg.png"
+                    width={40}
+                    height={40}
+                    className="object-contain"
+                  />
+                </div>
               <div>
                 <h1 className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold`}>Mohd Hassan AI</h1>
                 <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} text-sm`}>Online • GenAI Developer</p>
