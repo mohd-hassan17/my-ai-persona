@@ -86,52 +86,57 @@ const MohdHassanAIChat = () => {
   // };
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isSending) return; // prevent duplicate
-    setIsSending(true);
+  if (!inputValue.trim() || isSending) return; // prevent duplicate
+  setIsSending(true);
 
-    const userMessage = {
-      id: Date.now(),
-      type: "user",
-      content: inputValue,
+  const userMessage = {
+    id: Date.now(),
+    type: "user",
+    content: inputValue,
+    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  };
+
+  setMessages((prev) => [...prev, userMessage]); // update state
+  setInputValue("");
+  setIsTyping(true);
+
+  try {
+    // Use a fresh array with only the updated messages
+    const conversationHistory = [
+      ...messages.filter((msg) => msg.type !== 'user'), // existing AI messages
+      userMessage, // only this user message
+    ].map((msg) => ({
+      sender: msg.type,
+      content: msg.content,
+    }));
+
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: userMessage.content,
+        conversationHistory,
+      }),
+    });
+
+    const data = await res.json();
+
+    const aiMessage = {
+      id: Date.now() + 1,
+      type: "ai",
+      content: data.reply,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
-    setIsTyping(true);
+    setMessages((prev) => [...prev, aiMessage]);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setIsTyping(false);
+    setIsSending(false);
+  }
+};
 
-    try {
-      const conversationHistory = [...messages, userMessage].map((msg) => ({
-        sender: msg.type,
-        content: msg.content,
-      }));
-
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: inputValue,
-          conversationHistory,
-        }),
-      });
-
-      const data = await res.json();
-
-      const aiMessage = {
-        id: Date.now() + 1,
-        type: "ai",
-        content: data.reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsTyping(false);
-      setIsSending(false); // reset lock
-    }
-  };
 
   const handleQuickSuggestion = (suggestion) => {
     setInputValue(suggestion);
