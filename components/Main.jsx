@@ -58,95 +58,65 @@ const MohdHassanAIChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  // const handleSendMessage = () => {
-  //   if (!inputValue.trim()) return;
-
-  //   const newMessage = {
-  //     id: messages.length + 1,
-  //     type: 'user',
-  //     content: inputValue,
-  //     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  //   };
-
-  //   setMessages(prev => [...prev, newMessage]);
-  //   setInputValue('');
-  //   setIsTyping(true);
-
-  //   // Simulate AI response
-  //   setTimeout(() => {
-  //     setIsTyping(false);
-  //     const aiResponse = {
-  //       id: messages.length + 2,
-  //       type: 'ai',
-  //       content: generateAIResponse(inputValue),
-  //       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  //     };
-  //     setMessages(prev => [...prev, aiResponse]);
-  //   }, 1500);
-  // };
+  
 
   const handleSendMessage = async () => {
-  if (!inputValue.trim() || isSending) return;
-  
-  setIsSending(true);
-  const currentInput = inputValue; // Capture current input
-  setInputValue(''); // Clear input immediately
+  if (!inputValue.trim()) return;
 
-  const normalizedInput = currentInput.replace(/\b(\w+)\b(?:\s+\1\b)+/gi, '$1');
-
-  const userMessage = {
-    id: `user_${Date.now()}`, // Use prefixed unique IDs
-    type: 'user',
-    content: normalizedInput,
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  const newMessage = {
+    id: messages.length + 1,
+    type: "user",
+    content: inputValue,
+    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
   };
 
-  // Add user message immediately
-  setMessages(prev => [...prev, userMessage]);
+  setMessages((prev) => [...prev, newMessage]);
+  setInputValue("");
   setIsTyping(true);
 
   try {
-    // Build conversation history from current state + new message
-    const conversationHistory = [...messages, userMessage]
-      .filter((msg, i, arr) => i === 0 || msg.content !== arr[i - 1].content)
-      .map((msg) => ({ sender: msg.type, content: msg.content }));
+    // Build conversation history in the same format your backend expects
+    const conversationHistory = messages.map((msg) => ({
+      sender: msg.type, // "user" or "ai"
+      content: msg.content,
+    }));
 
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: normalizedInput,
+        message: inputValue,
         conversationHistory,
       }),
     });
 
-    if (!res.ok) throw new Error('API request failed');
-    
+    if (!res.ok) throw new Error("Backend error");
+
     const data = await res.json();
 
-    const aiMessage = {
-      id: `ai_${Date.now()}`, // Use prefixed unique IDs
-      type: 'ai',
+    const aiResponse = {
+      id: messages.length + 2,
+      type: "ai",
       content: data.reply,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    setMessages(prev => [...prev, aiMessage]);
+    setMessages((prev) => [...prev, aiResponse]);
   } catch (error) {
-    console.error('Chat error:', error);
-    // Add error message to chat
-    const errorMessage = {
-      id: `error_${Date.now()}`,
-      type: 'ai',
-      content: 'Sorry, I encountered an error. Please try again.',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    console.error(error);
+    const errorResponse = {
+      id: messages.length + 2,
+      type: "ai",
+      content: "⚠️ Something went wrong. Please try again.",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
-    setMessages(prev => [...prev, errorMessage]);
+    setMessages((prev) => [...prev, errorResponse]);
   } finally {
     setIsTyping(false);
-    setIsSending(false);
   }
 };
+
+
 
   const handleQuickSuggestion = (suggestion) => {
     setInputValue(suggestion);
