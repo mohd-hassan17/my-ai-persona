@@ -87,30 +87,30 @@ const MohdHassanAIChat = () => {
 
   const handleSendMessage = async () => {
   if (!inputValue.trim() || isSending) return;
+  
   setIsSending(true);
+  const currentInput = inputValue; // Capture current input
+  setInputValue(''); // Clear input immediately
 
-  const normalizedInput = inputValue.replace(/\b(\w+)\b(?:\s+\1\b)+/gi, '$1'); // normalize repeated words
+  const normalizedInput = currentInput.replace(/\b(\w+)\b(?:\s+\1\b)+/gi, '$1');
 
   const userMessage = {
-    id: Date.now(),
+    id: `user_${Date.now()}`, // Use prefixed unique IDs
     type: 'user',
     content: normalizedInput,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   };
 
-  // Build the messages array locally
-  const updatedMessages = [...messages, userMessage];
-
-  // Prepare conversation history for API
-  const conversationHistory = updatedMessages
-    .filter((msg, i, arr) => i === 0 || msg.content !== arr[i - 1].content) // deduplicate consecutive
-    .map((msg) => ({ sender: msg.type, content: msg.content }));
-
-  setMessages(updatedMessages); // update state
-  setInputValue('');
+  // Add user message immediately
+  setMessages(prev => [...prev, userMessage]);
   setIsTyping(true);
 
   try {
+    // Build conversation history from current state + new message
+    const conversationHistory = [...messages, userMessage]
+      .filter((msg, i, arr) => i === 0 || msg.content !== arr[i - 1].content)
+      .map((msg) => ({ sender: msg.type, content: msg.content }));
+
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -120,25 +120,33 @@ const MohdHassanAIChat = () => {
       }),
     });
 
+    if (!res.ok) throw new Error('API request failed');
+    
     const data = await res.json();
 
     const aiMessage = {
-      id: Date.now() + 1,
+      id: `ai_${Date.now()}`, // Use prefixed unique IDs
       type: 'ai',
       content: data.reply,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, aiMessage]);
+    setMessages(prev => [...prev, aiMessage]);
   } catch (error) {
-    console.error(error);
+    console.error('Chat error:', error);
+    // Add error message to chat
+    const errorMessage = {
+      id: `error_${Date.now()}`,
+      type: 'ai',
+      content: 'Sorry, I encountered an error. Please try again.',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages(prev => [...prev, errorMessage]);
   } finally {
     setIsTyping(false);
     setIsSending(false);
   }
 };
-
-
 
   const handleQuickSuggestion = (suggestion) => {
     setInputValue(suggestion);
