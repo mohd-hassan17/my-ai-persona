@@ -86,35 +86,36 @@ const MohdHassanAIChat = () => {
   // };
 
   const handleSendMessage = async () => {
-  if (!inputValue.trim() || isSending) return; // prevent duplicate
+  if (!inputValue.trim() || isSending) return;
   setIsSending(true);
+
+  const normalizedInput = inputValue.replace(/\b(\w+)\b(?:\s+\1\b)+/gi, '$1'); // normalize repeated words
 
   const userMessage = {
     id: Date.now(),
-    type: "user",
-    content: inputValue,
-    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    type: 'user',
+    content: normalizedInput,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   };
 
-  setMessages((prev) => [...prev, userMessage]); // update state
-  setInputValue("");
+  // Build the messages array locally
+  const updatedMessages = [...messages, userMessage];
+
+  // Prepare conversation history for API
+  const conversationHistory = updatedMessages
+    .filter((msg, i, arr) => i === 0 || msg.content !== arr[i - 1].content) // deduplicate consecutive
+    .map((msg) => ({ sender: msg.type, content: msg.content }));
+
+  setMessages(updatedMessages); // update state
+  setInputValue('');
   setIsTyping(true);
 
   try {
-    // Use a fresh array with only the updated messages
-    const conversationHistory = [
-      ...messages.filter((msg) => msg.type !== 'user'), // existing AI messages
-      userMessage, // only this user message
-    ].map((msg) => ({
-      sender: msg.type,
-      content: msg.content,
-    }));
-
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: userMessage.content,
+        message: normalizedInput,
         conversationHistory,
       }),
     });
@@ -123,9 +124,9 @@ const MohdHassanAIChat = () => {
 
     const aiMessage = {
       id: Date.now() + 1,
-      type: "ai",
+      type: 'ai',
       content: data.reply,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, aiMessage]);
@@ -136,6 +137,7 @@ const MohdHassanAIChat = () => {
     setIsSending(false);
   }
 };
+
 
 
   const handleQuickSuggestion = (suggestion) => {
